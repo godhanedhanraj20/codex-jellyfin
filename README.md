@@ -200,3 +200,37 @@ This project is supported by:
     &nbsp;
 <a href="https://www.jetbrains.com"><img src="https://gist.githubusercontent.com/anthonylavado/e8b2403deee9581e0b4cb8cd675af7db/raw/fa104b7d73f759d7262794b94569f1b89df41c0b/jetbrains.svg" height="50px" alt="JetBrains logo"></a>
 </p>
+
+## Deploying to Heroku (Container Stack)
+
+This repository now includes Heroku-oriented deployment assets (`Dockerfile`, `Procfile`, `app.json`) and runtime compatibility hooks for dyno environments.
+
+### Required environment variables
+
+- `PORT` (provided by Heroku)
+- `DATABASE_URL` (external PostgreSQL URL)
+- `HEROKU=true`
+- `JELLYFIN_DISABLE_OPTIONAL_BACKGROUND_SERVICES=true`
+- `JELLYFIN_DATA_DIR`
+- `JELLYFIN_CONFIG_DIR`
+- `JELLYFIN_CACHE_DIR`
+- `JELLYFIN_LOG_DIR`
+- `TRANSCODING_TEMP_PATH`
+
+Optional:
+- `FFMPEG_PATH`
+
+### Deploy commands
+
+```bash
+heroku create <app-name> --stack container
+heroku config:set HEROKU=true JELLYFIN_DISABLE_OPTIONAL_BACKGROUND_SERVICES=true
+heroku container:push web -a <app-name>
+heroku container:release web -a <app-name>
+```
+
+### Notes and limitations
+
+- Heroku dyno filesystems are ephemeral; local metadata/cache/transcode files are not persistent across restarts.
+- Persistent media and long-term state should be externalized (remote storage and managed PostgreSQL).
+- On small dynos, set `JELLYFIN_DISABLE_OPTIONAL_BACKGROUND_SERVICES=true` to reduce optional background workload.

@@ -106,6 +106,8 @@ internal class JellyfinMigrationService
             var dbContext = await _dbContextFactory.CreateDbContextAsync().ConfigureAwait(false);
             await using (dbContext.ConfigureAwait(false))
             {
+                await EnsureSchemaForProviderWithoutMigrationsAsync(dbContext).ConfigureAwait(false);
+
                 var databaseCreator = dbContext.Database.GetService<IDatabaseCreator>() as IRelationalDatabaseCreator
                     ?? throw new InvalidOperationException("Jellyfin does only support relational databases.");
                 if (!await databaseCreator.ExistsAsync().ConfigureAwait(false))
@@ -191,6 +193,8 @@ internal class JellyfinMigrationService
         var dbContext = await _dbContextFactory.CreateDbContextAsync().ConfigureAwait(false);
         await using (dbContext.ConfigureAwait(false))
         {
+            await EnsureSchemaForProviderWithoutMigrationsAsync(dbContext).ConfigureAwait(false);
+
             var historyRepository = dbContext.GetService<IHistoryRepository>();
             var migrationsAssembly = dbContext.GetService<IMigrationsAssembly>();
             var appliedMigrations = await historyRepository.GetAppliedMigrationsAsync().ConfigureAwait(false);
@@ -455,5 +459,23 @@ internal class JellyfinMigrationService
             var migrator = _jellyfinDbContext.GetService<IMigrator>();
             await migrator.MigrateAsync(_databaseMigrationInfo.Key).ConfigureAwait(false);
         }
+    }
+
+    private static async Task EnsureSchemaForProviderWithoutMigrationsAsync(JellyfinDbContext dbContext)
+    {
+        var migrationsAssembly = dbContext.GetService<IMigrationsAssembly>();
+        if (migrationsAssembly.Migrations.Count > 0)
+        {
+            return;
+        }
+
+        // Only apply EnsureCreated fallback for providers that intentionally do not ship
+        // migration assemblies in this repository (e.g. runtime-selected PostgreSQL provider).
+        if (dbContext.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) != true)
+        {
+            return;
+        }
+
+        await dbContext.Database.EnsureCreatedAsync().ConfigureAwait(false);
     }
 }

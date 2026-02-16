@@ -6,6 +6,7 @@ using System.Reflection;
 using Jellyfin.Database.Implementations;
 using Jellyfin.Database.Implementations.DbConfiguration;
 using Jellyfin.Database.Implementations.Locking;
+using Jellyfin.Database.Providers.Postgres;
 using Jellyfin.Database.Providers.Sqlite;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Configuration;
@@ -24,6 +25,7 @@ public static class ServiceCollectionExtensions
     private static IEnumerable<Type> DatabaseProviderTypes()
     {
         yield return typeof(SqliteDatabaseProvider);
+        yield return typeof(PostgresDatabaseProvider);
     }
 
     private static IDictionary<string, JellyfinDbProviderFactory> GetSupportedDbProviders()
@@ -80,6 +82,17 @@ public static class ServiceCollectionExtensions
     {
         var efCoreConfiguration = configurationManager.GetConfiguration<DatabaseConfigurationOptions>("database");
         JellyfinDbProviderFactory? providerFactory = null;
+
+        // Runtime override for PaaS-style DATABASE_URL providers.
+        // Intentionally does not persist to configuration storage.
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DATABASE_URL")))
+        {
+            efCoreConfiguration = new DatabaseConfigurationOptions
+            {
+                DatabaseType = PostgresDatabaseProvider.DatabaseType,
+                LockingBehavior = DatabaseLockingBehaviorTypes.NoLock
+            };
+        }
 
         if (efCoreConfiguration?.DatabaseType is null)
         {

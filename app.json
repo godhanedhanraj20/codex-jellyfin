@@ -1,0 +1,44 @@
+{
+  "name": "jellyfin-server",
+  "description": "Jellyfin server configured for Heroku container deployments",
+  "stack": "container",
+  "env": {
+    "HEROKU": {
+      "description": "Enable Heroku runtime mode",
+      "value": "true"
+    },
+    "JELLYFIN_DISABLE_OPTIONAL_BACKGROUND_SERVICES": {
+      "description": "Disable optional hosted background services for constrained dyno memory",
+      "value": "true"
+    },
+    "PORT": {
+      "description": "Heroku assigned web port"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection URL"
+    },
+    "JELLYFIN_DATA_DIR": {
+      "description": "Ephemeral data directory path",
+      "value": "/app/data"
+    },
+    "JELLYFIN_CONFIG_DIR": {
+      "description": "Configuration directory path",
+      "value": "/app/config"
+    },
+    "JELLYFIN_CACHE_DIR": {
+      "description": "Cache directory path",
+      "value": "/app/cache"
+    },
+    "JELLYFIN_LOG_DIR": {
+      "description": "Log directory path",
+      "value": "/app/log"
+    },
+    "TRANSCODING_TEMP_PATH": {
+      "description": "Transcoding temporary directory",
+      "value": "/tmp/jellyfin-transcodes"
+    },
+    "FFMPEG_PATH": {
+      "description": "Optional absolute path to ffmpeg binary"
+    }
+  }
+}
