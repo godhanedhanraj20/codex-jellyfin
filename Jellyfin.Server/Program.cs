@@ -338,12 +338,27 @@ namespace Jellyfin.Server
                 inMemoryDefaultConfig[DefaultRedirectKey] = "api-docs/swagger";
             }
 
+            var runtimeEnvironmentOverrides = new Dictionary<string, string?>();
+            var ffmpegPath = Environment.GetEnvironmentVariable("FFMPEG_PATH");
+            if (!string.IsNullOrWhiteSpace(ffmpegPath))
+            {
+                runtimeEnvironmentOverrides[FfmpegPathKey] = ffmpegPath;
+            }
+
+            var transcodingTempPath = Environment.GetEnvironmentVariable("TRANSCODING_TEMP_PATH")
+                ?? Environment.GetEnvironmentVariable("JELLYFIN_TRANSCODING_TEMP_PATH");
+            if (!string.IsNullOrWhiteSpace(transcodingTempPath))
+            {
+                runtimeEnvironmentOverrides["encoding:TranscodingTempPath"] = transcodingTempPath;
+            }
+
             return config
                 .SetBasePath(appPaths.ConfigurationDirectoryPath)
                 .AddInMemoryCollection(inMemoryDefaultConfig)
                 .AddJsonFile(LoggingConfigFileDefault, optional: false, reloadOnChange: true)
                 .AddJsonFile(LoggingConfigFileSystem, optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables("JELLYFIN_")
+                .AddInMemoryCollection(runtimeEnvironmentOverrides)
                 .AddInMemoryCollection(commandLineOpts.ConvertToConfig());
         }
 

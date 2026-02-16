@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using Jellyfin.Server.Helpers;
 using MediaBrowser.Common.Configuration;
@@ -77,6 +78,16 @@ public static class WebHostBuilderExtensions
         WebHostBuilderContext builderContext,
         KestrelServerOptions options)
     {
+        var herokuMode = string.Equals(Environment.GetEnvironmentVariable("HEROKU"), bool.TrueString, StringComparison.OrdinalIgnoreCase);
+        var herokuPort = GetHerokuPort(logger);
+
+        if (herokuMode && herokuPort.HasValue)
+        {
+            logger.LogInformation("HEROKU mode detected. Binding Kestrel to 0.0.0.0:{Port}", herokuPort.Value);
+            options.Listen(IPAddress.Any, herokuPort.Value);
+            return;
+        }
+
         bool flagged = false;
         foreach (var netAdd in addresses)
         {
@@ -132,5 +143,23 @@ public static class WebHostBuilderExtensions
             options.ListenUnixSocket(socketPath);
             logger.LogInformation("Kestrel listening to unix socket {SocketPath}", socketPath);
         }
+    }
+
+    private static int? GetHerokuPort(ILogger logger)
+    {
+        var portValue = Environment.GetEnvironmentVariable("PORT");
+        if (string.IsNullOrWhiteSpace(portValue))
+        {
+            return null;
+        }
+
+        if (int.TryParse(portValue, NumberStyles.None, CultureInfo.InvariantCulture, out var port)
+            && port is > 0 and <= 65535)
+        {
+            return port;
+        }
+
+        logger.LogWarning("Invalid PORT environment variable value '{PortValue}'. Falling back to configured network ports.", portValue);
+        return null;
     }
 }

@@ -128,11 +128,16 @@ namespace Jellyfin.Server
             services.AddLiveTvServices();
 
             services.AddHostedService<RecordingsHost>();
-            services.AddHostedService<AutoDiscoveryHost>();
-            services.AddHostedService<NfoUserDataSaver>();
-            services.AddHostedService<LibraryChangedNotifier>();
-            services.AddHostedService<UserDataChangeNotifier>();
-            services.AddHostedService<RecordingNotifier>();
+
+            var disableOptionalBackgroundServices = string.Equals(Environment.GetEnvironmentVariable("JELLYFIN_DISABLE_OPTIONAL_BACKGROUND_SERVICES"), bool.TrueString, StringComparison.OrdinalIgnoreCase);
+            if (!disableOptionalBackgroundServices)
+            {
+                services.AddHostedService<AutoDiscoveryHost>();
+                services.AddHostedService<NfoUserDataSaver>();
+                services.AddHostedService<LibraryChangedNotifier>();
+                services.AddHostedService<UserDataChangeNotifier>();
+                services.AddHostedService<RecordingNotifier>();
+            }
         }
 
         /// <summary>
